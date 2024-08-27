@@ -1,0 +1,10 @@
+<<<<<<< HEAD
+# Ignore virtual environment
+venv/
+
+# Ignore model files
+models/
+=======
+venv/
+models/
+>>>>>>> recover-latest-commits
