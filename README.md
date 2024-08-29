@@ -4,7 +4,7 @@ This project is a **Streamlit web application** that allows users to generate bl
 
 ![LLaMA2](https://img.shields.io/badge/Skill-LLaMA2-yellow)
 ![LLM](https://img.shields.io/badge/Skill-LLM-blueviolet)
-![Gen AI](https://img.shields.io/badge/Skill-LGen%20AI-orange)
+![Gen AI](https://img.shields.io/badge/Skill-Gen%20AI-orange)
 ![Conversational Bot](https://img.shields.io/badge/Skill-Conversational%20Bot-green)
 
 
