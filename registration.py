@@ -1,50 +1,123 @@
-from flask import Flask, render_template, request, redirect, session
-from flask_mysqldb import MySQL
-import bcrypt
+from flask import Flask, request, render_template, redirect, url_for, session, flash
+from werkzeug.security import generate_password_hash, check_password_hash
+from DBconnection import connection
+from langchain.prompts import PromptTemplate
+from langchain_community.llms import CTransformers
 
 app = Flask(__name__)
-app.secret_key = ''
+app.secret_key = 'Hessam89322'
 
-# MySQL configurations
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '123456q@'
-app.config['MYSQL_DB'] = 'your_database'
+# Function to get response from LLama 2 model
+def getLLamaresponse(input_text, no_words, blog_style, tone_style):
+    llm = CTransformers(model='/path/to/llama-2-7b-chat.ggmlv3.q8_0.bin', 
+                        model_type='llama', 
+                        config={'max_new_tokens': 256, 'temperature': 0.01})
+    
+    template = f"""
+    Write a {tone_style} blog for {blog_style} job profile on the topic {input_text}
+    within {no_words} words.
+    """
 
-mysql = MySQL(app)
+    prompt = PromptTemplate(input_variables=["blog_style", "input_text", "no_words", "tone_style"],
+                            template=template)
 
-# Sign Up
+    response = llm.generate(prompt.format(blog_style=blog_style, input_text=input_text, no_words=no_words, tone_style=tone_style))
+    return response
+
+# Sign Up Route
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
-        password = bcrypt.hashpw(request.form['password'].encode('utf-8'), bcrypt.gensalt())
-
-        cursor = mysql.connection.cursor()
-        cursor.execute('INSERT INTO users (username, email, password) VALUES (%s, %s, %s)', (username, email, password))
-        mysql.connection.commit()
-        cursor.close()
-        return redirect('/login')
+        password = generate_password_hash(request.form['password'], method='sha256')
+        
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", 
+                       (username, email, password))
+        connection.commit()
+        return redirect(url_for('login'))
     return render_template('signup.html')
 
-# Sign In
+# Sign In Route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form['email']
-        password = request.form['password'].encode('utf-8')
+        password = request.form['password']
 
-        cursor = mysql.connection.cursor()
-        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
-        cursor.close()
-
-        if user and bcrypt.checkpw(password, user[3].encode('utf-8')):
-            session['loggedin'] = True
+        
+        if user and check_password_hash(user[3], password):
             session['user_id'] = user[0]
-            session['username'] = user[1]
-            return redirect('/dashboard')
+            return redirect(url_for('dashboard'))
         else:
-            return 'Invalid credentials'
+            flash("Login failed. Please check your email and password.")
+            return redirect(url_for('login'))
     return render_template('login.html')
+
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM blogs WHERE user_id = %s", (user_id,))
+    blogs = cursor.fetchall()
+
+    return render_template('dashboard.html', blogs=blogs)
+
+@app.route('/create_blog', methods=['GET', 'POST'])
+def create_blog():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        user_id = session['user_id']
+
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO blogs (user_id, title, content) VALUES (%s, %s, %s)", 
+                       (user_id, title, content))
+        connection.commit()
+        return redirect(url_for('dashboard'))
+    
+    return render_template('create_blog.html')
+
+# Route for AI Blog Generation
+@app.route('/generate_blog', methods=['GET', 'POST'])
+def generate_blog():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        input_text = request.form['input_text']
+        no_words = request.form['no_words']
+        blog_style = request.form['blog_style']
+        tone_style = request.form['tone_style']
+
+        generated_content = getLLamaresponse(input_text, no_words, blog_style, tone_style)
+        
+        # Save generated blog to the database
+        user_id = session['user_id']
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO blogs (user_id, title, content) VALUES (%s, %s, %s)", 
+                       (user_id, input_text, generated_content))
+        connection.commit()
+
+        return redirect(url_for('dashboard'))
+    
+    return render_template('generate_blog.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    return redirect(url_for('login'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
