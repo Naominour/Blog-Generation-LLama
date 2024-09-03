@@ -1,11 +1,10 @@
 from flask import Flask, request, render_template, redirect, url_for, session, flash
-from werkzeug.security import generate_password_hash, check_password_hash
 from DBconnection import connection
 from langchain.prompts import PromptTemplate
 from langchain_community.llms import CTransformers
 
 app = Flask(__name__)
-app.secret_key = 'Hessam89322'
+app.secret_key = ''
 
 # Function to get response from LLama 2 model
 def getLLamaresponse(input_text, no_words, blog_style, tone_style):
@@ -24,13 +23,17 @@ def getLLamaresponse(input_text, no_words, blog_style, tone_style):
     response = llm.generate(prompt.format(blog_style=blog_style, input_text=input_text, no_words=no_words, tone_style=tone_style))
     return response
 
+@app.route('/')
+def home():
+    return redirect(url_for('login'))  # Redirect to the login page, or render a homepage
+
 # Sign Up Route
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
-        password = generate_password_hash(request.form['password'], method='sha256')
+        password = request.form['password']
         
         cursor = connection.cursor()
         cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", 
@@ -47,10 +50,10 @@ def login():
         password = request.form['password']
 
         cursor = connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        cursor.execute("SELECT * FROM users WHERE email = %s AND password = %s", (email, password))
         user = cursor.fetchone()
         
-        if user and check_password_hash(user[3], password):
+        if user:
             session['user_id'] = user[0]
             return redirect(url_for('dashboard'))
         else:
@@ -78,12 +81,11 @@ def create_blog():
 
     if request.method == 'POST':
         title = request.form['title']
-        content = request.form['content']
         user_id = session['user_id']
 
         cursor = connection.cursor()
-        cursor.execute("INSERT INTO blogs (user_id, title, content) VALUES (%s, %s, %s)", 
-                       (user_id, title, content))
+        cursor.execute("INSERT INTO blogs (user_id, title) VALUES (%s, %s)", 
+                       (user_id, title))
         connection.commit()
         return redirect(url_for('dashboard'))
     
@@ -101,6 +103,7 @@ def generate_blog():
         blog_style = request.form['blog_style']
         tone_style = request.form['tone_style']
 
+        # Generate content using Llama 2
         generated_content = getLLamaresponse(input_text, no_words, blog_style, tone_style)
         
         # Save generated blog to the database
@@ -112,7 +115,11 @@ def generate_blog():
 
         return redirect(url_for('dashboard'))
     
-    return render_template('generate_blog.html')
+    blog_styles = ['Researchers', 'Data Scientist', 'Common People']
+    tone_styles = ['Formal', 'Friendly', 'Casual', 'Professional', 
+                   'Diplomatic', 'Confident', 'Engaging', 'Academic']
+
+    return render_template('generate_blog.html', blog_styles=blog_styles, tone_styles=tone_styles)
 
 @app.route('/logout')
 def logout():

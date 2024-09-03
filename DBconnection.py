@@ -9,7 +9,7 @@ def create_connection():
             host='localhost',
             database='blog_db',
             user='root',
-            password='123456q@',
+            password='',
         )
         if connection.is_connected():
             print("Connected to MySQL database")

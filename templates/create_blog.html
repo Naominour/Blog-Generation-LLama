@@ -6,15 +6,15 @@
     <title>Create Blog</title>
 </head>
 <body>
-    <h2>Create a New Blog</h2>
+    <h2>Generate a New Blog</h2>
     <form action="/create_blog" method="POST">
         <label for="title">Title:</label><br>
         <input type="text" id="title" name="title" required><br><br>
 
-        <label for="content">Content:</label><br>
-        <textarea id="content" name="content" rows="10" required></textarea><br><br>
-
-        <input type="submit" value="Create Blog">
+        <label for="no_words">Number of words:</label><br>
+        <input type="text" id="no_words" name="no_words" required><br><br>
+        
+        <input type="submit" value="Generate Blog">
     </form>
     <p><a href="/dashboard">Back to Dashboard</a></p>
 </body>
