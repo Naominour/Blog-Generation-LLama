@@ -8,7 +8,7 @@ app.secret_key = ''
 
 # Function to get response from LLama 2 model
 def getLLamaresponse(input_text, no_words, blog_style, tone_style):
-    llm = CTransformers(model='/path/to/llama-2-7b-chat.ggmlv3.q8_0.bin', 
+    llm = CTransformers(model='/content/llama-2-7b-chat.ggmlv3.q8_0.bin', 
                         model_type='llama', 
                         config={'max_new_tokens': 256, 'temperature': 0.01})
     
