@@ -1,14 +1,34 @@
 from flask import Flask, request, render_template, redirect, url_for, session, flash
-from DBconnection import connection
 from langchain.prompts import PromptTemplate
 from langchain_community.llms import CTransformers
+import mysql.connector
+from mysql.connector import Error
 
 app = Flask(__name__)
 app.secret_key = ''
 
+# MySQL database connection function
+def create_connection():
+    try:
+        connection = mysql.connector.connect(
+            host='localhost',  # Your MySQL host (use 'localhost' or an IP address)
+            database='blog_db',  # Your database name
+            user='root',  # Your MySQL username
+            password='hessam'  # Your MySQL password
+        )
+        if connection.is_connected():
+            print("Connected to MySQL database")
+            return connection
+    except Error as e:
+        print("Error connecting to MySQL database", e)
+        return None
+
+# Initialize MySQL connection
+connection = create_connection()
+
 # Function to get response from LLama 2 model
 def getLLamaresponse(input_text, no_words, blog_style, tone_style):
-    llm = CTransformers(model='/content/llama-2-7b-chat.ggmlv3.q8_0.bin', 
+    llm = CTransformers(model='models/llama-2-7b-chat.ggmlv3.q8_0.bin', 
                         model_type='llama', 
                         config={'max_new_tokens': 256, 'temperature': 0.01})
     
@@ -20,12 +40,12 @@ def getLLamaresponse(input_text, no_words, blog_style, tone_style):
     prompt = PromptTemplate(input_variables=["blog_style", "input_text", "no_words", "tone_style"],
                             template=template)
 
-    response = llm.generate(prompt.format(blog_style=blog_style, input_text=input_text, no_words=no_words, tone_style=tone_style))
-    return response
+    response = llm.generate([prompt.format(blog_style=blog_style, input_text=input_text, no_words=no_words, tone_style=tone_style)])
+    return response[0]
 
 @app.route('/')
 def home():
-    return redirect(url_for('login'))  # Redirect to the login page, or render a homepage
+    return redirect(url_for('login'))
 
 # Sign Up Route
 @app.route('/signup', methods=['GET', 'POST'])
