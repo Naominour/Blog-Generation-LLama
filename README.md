@@ -1,10 +1,10 @@
 # Generate Blogs with Streamlit and LLaMA 2
 This project is a **Streamlit web application** that allows users to generate blogs on various topics using the **LLaMA 2 model**. Users can specify the number of words, the target audience, and the tone of the blog, making it a versatile tool for content creation.
 
-### Sign up page
+### Sign up page:
 <img src="images\img3.jpg" style="width:400px;border:solid 1px blue;">
 
-### Blog generation page
+### Blog generation page:
 <img src="images\img1.jpg" style="width:400px;border:solid 1px blue;">
 
 
