@@ -5,7 +5,6 @@ This project is a **Streamlit web application** that allows users to generate bl
 <img src="images\img3.jpg" style="width:400px;border:solid 1px blue;">
 
 ### Blog generation page
-
 <img src="images\img1.jpg" style="width:400px;border:solid 1px blue;">
 
 
